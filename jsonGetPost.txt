@@ -1,0 +1,123 @@
+testIP : 169.254.129.19
+
+@GET("/users/{id}")
+	void getUser(@Path("id") int id, @Query("app_token") String app_token, @Query("auth_token") String auth_token, @Query("device") String device, Callback<JsonObject> callback);
+
+NetworkEngine.getInstance().getUser(ID, PutetApplication.app_token, Authentication, PutetApplication.getInstance().DeviceID(), new Callback<JsonObject>() {
+			public void success(JsonObject arg0, Response arg1) {
+				try {
+					switch (arg1.getStatus()) {
+					case 200:
+						User user = new Gson().fromJson(arg0, User.class);
+						SharedPreferences sharedPreferences = getSharedPreferences("User", Activity.MODE_PRIVATE);
+						SharedPreferences.Editor editor = sharedPreferences.edit();
+						editor.putInt("points", user.getPoints());
+						editor.putBoolean("subscription_is_active", user.getSubscription_is_active());
+						editor.commit();
+						txt_name.setText(user.getName());
+						txt_score.setText("Score: " + user.getPoints());
+						Log.i("", "Got " + user.getPoints() + " points");
+						// Alert if subscription expired
+						if (!user.getSubscription_is_active()) {
+							showErrorDialog(R.string.alert_subscription_expired);
+						}
+						break;
+					default:
+						break;
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+
+			public void failure(RetrofitError arg0) {
+			}
+		});
+	}
+	
+@POST("/login")
+	void postLogin(@Query("app_token") String app_token, @Query("device") String device, @Query("username") String email, @Query("password") String password, Callback<JsonObject> callback);
+
+NetworkEngine.getInstance().postLogin(PutetApplication.app_token, PutetApplication.getInstance().DeviceID(), Email, Password, new Callback<JsonObject>() {
+
+			public void success(JsonObject arg0, Response arg1) {
+
+				try {
+					User user = new Gson().fromJson(arg0, User.class);
+					Log.i("", "Hello User : " + user.toString());
+					SharedPreferences sharedPreferences = getSharedPreferences("User", Activity.MODE_PRIVATE);
+					SharedPreferences.Editor editor = sharedPreferences.edit();
+					editor.putInt("id", user.getId());
+					editor.putString("name", user.getName());
+					editor.putString("dob", user.getDob());
+					editor.putString("city", user.getCity());
+					editor.putString("state", user.getState());
+					editor.putInt("points", user.getPoints());
+					editor.putString("phone", user.getPhone());
+					editor.putString("email", user.getEmail());
+					editor.putString("country", user.getCountry());
+					editor.putString("username", user.getUsername());
+					editor.putInt("downloads_count", user.getDownloads_count());
+					editor.putLong("created_at", user.getCreated_at());
+					editor.putLong("updated_at", user.getUpdated_at());
+					editor.putString("authentication_token", user.getAuthentication_token());
+					editor.commit();
+					startActivity(new Intent(getApplicationContext(), MainContentActivity.class));
+					progressHUD.dismiss();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				finish();
+			}
+
+			public void failure(RetrofitError arg0) {
+
+				if (arg0.getResponse() != null) {
+					switch (arg0.getResponse().getStatus()) {
+					case 400:
+						final ErrorAuthenticated BadRequest = (ErrorAuthenticated) arg0.getBodyAs(ErrorAuthenticated.class);
+						// Show Error dialog
+						alertDialog.setTitle("Error Message");
+						alertDialog.setMessage(BadRequest.getError());
+						alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK", new DialogInterface.OnClickListener() {
+							public void onClick(DialogInterface dialog, int which) {
+								SharedPreferences sharedPreferences = getSharedPreferences("Authentication", Activity.MODE_PRIVATE);
+								SharedPreferences.Editor editor = sharedPreferences.edit();
+								editor.putString("authentication_token", BadRequest.getAuthentication_token());
+								editor.commit();
+								startActivity(new Intent(getApplicationContext(), NotActivateActivity.class));
+								dialog.cancel();
+							}
+						});
+
+						// Showing Alert Message
+						alertDialog.show();
+						progressHUD.dismiss();
+						break;
+					case 401:
+						Errors Unauthorized = (Errors) arg0.getBodyAs(Errors.class);
+						// Show Error dialog
+						alertDialog.setTitle("Error Message");
+						alertDialog.setMessage(Unauthorized.getError());
+						alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK", new DialogInterface.OnClickListener() {
+							public void onClick(DialogInterface dialog, int which) {
+								dialog.cancel();
+							}
+						});
+						alertDialog.show();
+						progressHUD.dismiss();
+						break;
+					default:
+						break;
+					}
+
+				}
+			}
+		});	
+		
+HttpClient
+
+HttpParams params = new BasicHttpParams();
+			HttpProtocolParams.setVersion(params, HttpVersion.HTTP_1_1);
+			HttpProtocolParams.setContentCharset(params, HTTP.UTF_8);
+		
